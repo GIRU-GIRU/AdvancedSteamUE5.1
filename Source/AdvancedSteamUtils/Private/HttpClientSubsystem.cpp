@@ -16,12 +16,12 @@ void UHttpClientSubsystem::Deinitialize()
 	Super::Deinitialize();
 }
 
-template<typename UserClass, typename... VarTypes>
-TSharedRef<IHttpRequest> UHttpClientSubsystem::CreateRequest(FString Endpoint, ERestVerbType Verb, UserClass* WorldContextObject, typename TMemFunPtrType<false, UserClass, void(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)>::Type InFunc)
+
+TSharedRef<IHttpRequest> UHttpClientSubsystem::CreateRequest(FString Endpoint, ERestVerbType Verb, FHttpRequestCompleteDelegate InFunc)
 {
 	TSharedRef<IHttpRequest> Request = Http->CreateRequest();
 
-	Request->OnProcessRequestComplete().BindUObject(WorldContextObject, InFunc);
+	Request->OnProcessRequestComplete() = InFunc;
 	Request->SetVerb(EnumAsString(Verb));
 	Request->SetHeader(TEXT("Host"), "HostHeader");
 	Request->SetHeader(TEXT("User-Agent"), "X-UnrealEngine-Agent");
@@ -32,6 +32,9 @@ TSharedRef<IHttpRequest> UHttpClientSubsystem::CreateRequest(FString Endpoint, E
 	
 	return Request;
 }
+
+
+
 
 template <typename T>
 FString UHttpClientSubsystem::EnumAsString(T EnumValue)

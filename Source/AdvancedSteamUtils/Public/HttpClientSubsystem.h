@@ -11,6 +11,7 @@
  * 
  */
 
+
 enum class ERestVerbType : uint8;
 class FHttpModule;
 UCLASS()
@@ -31,11 +32,10 @@ protected:
 	virtual void Deinitialize() override;
 
 public:
-	template <typename UserClass, typename... VarTypes>
-	TSharedRef<IHttpRequest> CreateRequest(FString Endpoint, ERestVerbType Verb, UserClass* WorldContextObject, typename TMemFunPtrType<false, UserClass, void(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)>::Type InFunc);
+	
+	TSharedRef<IHttpRequest> CreateRequest(FString Endpoint, ERestVerbType Verb, FHttpRequestCompleteDelegate InFunc);
 
 protected:
 	template <typename T>
 	static FString EnumAsString(T EnumValue);
-
 };

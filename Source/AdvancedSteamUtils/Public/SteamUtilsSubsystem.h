@@ -1,24 +1,14 @@
 #pragma once
 
 #include "Interfaces/IHttpRequest.h"
+#include "Interfaces/OnlineSessionInterface.h"
+#include "Structs.h"
 #include "SteamUtilsSubsystem.generated.h"
-
-USTRUCT()
-struct FAuthRequestData
-{
-	GENERATED_BODY()
-
-	FString ID;
-	FString AuthTicket;
-
-	bool IsValid() const
-	{
-		return !ID.IsEmpty() && !AuthTicket.IsEmpty();
-	}
-};
 
 class FOnlineSubsystemSteam;
 class FOnlineSessionSearch;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FCallbackSearchForSessions, bool, Success);
 
 UCLASS()
 class USteamUtilitiesSubsystem : public UGameInstanceSubsystem
@@ -28,7 +18,7 @@ class USteamUtilitiesSubsystem : public UGameInstanceSubsystem
 public:
 	USteamUtilitiesSubsystem();
 
-	#define LOCAL_USER_NUMBER (0)
+#define LOCAL_USER_NUMBER (0)
 
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override { return true; }
 
@@ -38,9 +28,40 @@ public:
 
 	FOnlineSubsystemSteam* Steam;
 
+	//>>>> Sessions
+	UFUNCTION(BlueprintCallable)
+	void SearchForSessions();
+
+	UFUNCTION(BlueprintCallable)
+	void JoinSession(FSessionInfo TargetSession);
+	
+	UFUNCTION(BlueprintCallable)
+	void CallbackSessionCreated(FName ServerName, bool Success);
+
+	UFUNCTION(BlueprintCallable)
+	void RequestCreateServerSession(FName ServerName);
+
+	TSharedPtr<FOnlineSessionSearch> SessionSearchSettings;
+
+	/* We have to use callbacks because async/await didnt exist in prehistoric days*/
+	void CallbackFindSession(bool bSuccess);
+
+	UPROPERTY(BlueprintAssignable)
+	FCallbackSearchForSessions CallbackSearchForSessions;
+
+
+	void CallbackAcceptedUserInvite(bool bWasSuccessful, int ControllerID, TSharedPtr<const FUniqueNetId, ESPMode::ThreadSafe> UniqueNetId,
+	                                const FOnlineSessionSearchResult& OnlineSessionSearchResult);
+
+	bool RequestJoinSession(FOnlineSessionSearchResult Session);
+	void CallbackJoinSession(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+
+	UPROPERTY(BlueprintReadOnly)
+	TArray<FSessionInfo> SessionSearchResults;
 
 
 
+	
 	//>>>> Rich Presence
 	/* This requires specific setup in the steam partner portal, check method body for details*/
 	UFUNCTION(BlueprintCallable)
@@ -49,23 +70,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ClearSteamRichPresence();
 
-
-	//>>>> Sessions
-	TSharedPtr<FOnlineSessionSearch> SessionSearchSettings;
-
-	UFUNCTION(BlueprintCallable)
-	void SearchForSessions();
-
-	/* We have to use callbacks because async/await didnt exist in prehistoric days*/
-	void CallbackFindSession(bool bSuccess);
-
-
 	//>>>> Auth
 	/* Example of what authenticating with your backend through steam would look like, backend code not included */
 	UFUNCTION(BlueprintCallable)
 	void RequestLogin();
-
 	void CallbackLogin(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
-
 	FAuthRequestData GetAuthRequestData();
 };
